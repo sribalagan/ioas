@@ -6,30 +6,32 @@ const users = [
   { id: "2", username: "user2", password: bcrypt.hashSync("password2", 10) }  // hashed password
 ];
 
+console.log(users[0].password);
+
 // Simulate login authentication logic with bcrypt password validation
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   const { id, username, password } = req.body;
 
   // Find the user by id and username
   const user = users.find(user => user.id === id && user.username === username);
 
   if (user) {
-    // Compare the entered password with the stored hashed password
-    bcrypt.compare(password, user.password, (err, result) => {
-      if (err) {
-        return res.status(500).json({ success: false, message: "Server error" });
-      }
+    try {
+      // Compare the entered password with the stored hashed password
+      const result = await bcrypt.compare(password, user.password);
 
       if (result) {
         // If passwords match, send success response
         return res.json({ success: true });
       } else {
         // If passwords don't match, send failure response
-        return res.json({ success: false });
+        return res.json({ success: false, message: "Invalid credentials" });
       }
-    });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
   } else {
     // If user not found
-    return res.json({ success: false });
+    return res.json({ success: false, message: "Invalid credentials" });
   }
 };
