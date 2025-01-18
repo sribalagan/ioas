@@ -1,8 +1,8 @@
 const bcrypt = require("bcryptjs");
 
 const users = [
-  {username: "user1" , mobileNumber: "1234567890" , password: bcrypt.hashSync("password1", 10) }, 
-  {username: "user2" , mobileNumber: "9876543210" , password: bcrypt.hashSync("password2", 10) }  
+  {username: "user1" , mobileNumber: "1234567890" , password: bcrypt.hashSync("password1", 10),installations: 1  }, 
+  {username: "user2" , mobileNumber: "9876543210" , password: bcrypt.hashSync("password2", 10),installations: 1  }  
 ];
 
 // login function
@@ -38,11 +38,21 @@ exports.login = (req, res) => {
 exports.register = (req, res) => {
   const { mobileNumber } = req.body;
 
-  // Check if the mobile number exists in the users database (mocked in this case)
+  // Find user by mobile number
   const existingUser = users.find(user => user.mobileNumber === mobileNumber);
 
   if (existingUser) {
-    // Mobile number found, proceed to login
+    // Check if the installation limit (3 installs) has been exceeded
+    if (existingUser.installations >= 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Installation limit reached. You can only install the app 3 times."
+      });
+    }
+
+    // Allow installation and increment the installation count
+    existingUser.installations += 1;
+
     return res.status(200).json({
       success: true,
       message: "Mobile number is valid. Proceed to login."
