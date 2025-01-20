@@ -61,7 +61,7 @@ exports.register = (req, res) => {
     // Mobile number not found
     return res.status(404).json({
       success: false,
-      message: "Mobile number not found. Please register."
+      message: "the given number is not registered in our records."
     });
   }
 };
