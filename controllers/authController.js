@@ -5,25 +5,35 @@ const users = [
     username: "user1", 
     mobileNumber: "1234567890", 
     password: bcrypt.hashSync("password1", 10),
-    androidId: null,  // Added androidId for storing the device's ID
+    androidId: null,  // Store the Android ID
     installations: 1  
   },
   { 
     username: "user2", 
     mobileNumber: "9876543210", 
     password: bcrypt.hashSync("password2", 10),
-    androidId: null,  // Added androidId for storing the device's ID
+    androidId: null,  // Store the Android ID
     installations: 1  
   }
 ];
 
-// Login function
+// Login function (Updated: No ANDROID_ID validation here)
 exports.login = (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, mobileNumber } = req.body;
 
+  // Step 1: Find user by username
   const user = users.find(user => user.username === username);
 
   if (user) {
+    // Step 2: Check if the mobile number matches the one associated with the username
+    if (user.mobileNumber !== mobileNumber) {
+      return res.status(401).json({
+        success: false,
+        message: "Mobile number does not match with the username."
+      });
+    }
+
+    // Step 3: Compare password
     bcrypt.compare(password, user.password, (err, result) => {
       if (err) {
         console.error("Error comparing passwords:", err);
@@ -41,7 +51,7 @@ exports.login = (req, res) => {
   }
 };
 
-// Register function
+// Register function (Only `ANDROID_ID` validation during registration)
 exports.register = (req, res) => {
   const { mobileNumber, androidId } = req.body;
 
@@ -57,33 +67,25 @@ exports.register = (req, res) => {
       });
     }
 
-    // Step 1: First-time registration (if androidId is null)
-    if (existingUser.androidId === null) {
-      existingUser.androidId = androidId; // Store the Android ID for first-time registration
-      existingUser.installations += 1; // Increment installation count
+    // Allow installation and increment the installation count
+    existingUser.installations += 1;
+
+    // Step 1: Store the Android ID if it's null (first-time registration)
+    if (!existingUser.androidId) {
+      existingUser.androidId = androidId;
       return res.status(200).json({
         success: true,
-        message: "Mobile number verified and device registered successfully!"
+        message: "Mobile number is valid and Android ID registered. Proceed to login."
       });
     }
 
-    // Step 2: Check if Android ID matches (for reinstallation)
-    if (existingUser.androidId === androidId) {
-      // If the Android ID matches, allow reinstallation
-      existingUser.installations += 1; // Increment installation count
-      return res.status(200).json({
-        success: true,
-        message: "Device registered successfully!"
-      });
-    } else {
-      // If the Android ID does not match, it's a different device
-      return res.status(400).json({
-        success: false,
-        message: "This device is not authorized for this phone number."
-      });
-    }
+    // If Android ID already exists, don't update it and return a message
+    return res.status(200).json({
+      success: true,
+      message: "Mobile number is valid. Proceed to login."
+    });
   } else {
-    // Mobile number not found in the database
+    // Mobile number not found
     return res.status(404).json({
       success: false,
       message: "The given number is not registered in our records."
