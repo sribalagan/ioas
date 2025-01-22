@@ -17,7 +17,7 @@ const users = [
     mobileNumber: "9876543210", 
     password: bcrypt.hashSync("password2", 10),
     androidId: null,
-    installations: 1,
+    installations: 2,
     email: "coczeller918@gmail.com" // Email for sending OTP
   }
 ];
