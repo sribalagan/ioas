@@ -1,8 +1,7 @@
 const bcrypt = require("bcryptjs");
-const otpGenerator = require("otp-generator"); // Install otp-generator package
-const nodemailer = require("nodemailer"); // Use Nodemailer for email sending
-const moment = require("moment"); // For handling expiry time
-
+const otpGenerator = require("otp-generator"); // OTP generation
+const nodemailer = require("nodemailer"); // Email sending
+const moment = require("moment"); // Expiry handling
 
 const users = [
   { 
@@ -11,15 +10,15 @@ const users = [
     password: bcrypt.hashSync("password1", 10),
     androidId: null,  // Store the Android ID
     installations: 1,
-    email: "sribalagan2003@gmail.com" // Email added for sending OTP
+    email: "sribalagan2003@gmail.com" // Email for sending OTP
   },
   { 
     username: "user2", 
     mobileNumber: "9876543210", 
     password: bcrypt.hashSync("password2", 10),
-    androidId: null,  // Store the Android ID
+    androidId: null,
     installations: 1,
-    email: "coczeller918@gmail.com" // Email added for sending OTP
+    email: "coczeller918@gmail.com" // Email for sending OTP
   }
 ];
 
@@ -27,100 +26,104 @@ const otpStore = {}; // In-memory OTP store
 
 // Generate OTP function
 exports.generateOtp = (req, res) => {
-  const { username } = req.body;
+  const { username, password, mobileNumber } = req.body;
 
-  // Step 1: Find user by username
   const user = users.find(user => user.username === username);
 
   if (user) {
-    // Step 2: Generate a 6-digit OTP
-    const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
-
-    // Step 3: Store the OTP with expiry time (5 minutes)
-    otpStore[username] = {
-      otp: otp,
-      expiresAt: moment().add(5, "minutes").toISOString()
-    };
-
-    // Step 4: Send OTP to the user's email using Nodemailer
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user:"sribalagan.21@gmail.com",  // Get email from environment variables
-        pass:"seemasri21"  // Get email password from environment variables
+    // Validate password
+    bcrypt.compare(password, user.password, (err, result) => {
+      if (err || !result) {
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
       }
-    });
 
-    const mailOptions = {
-      from: process.env.EMAIL,
-      to: user.email,
-      subject: 'Your OTP Code',
-      text: `Your OTP is: ${otp}`
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending OTP email:", error); // Log error
-        return res.status(500).json({ success: false, message: "Failed to send OTP" });
-      } else {
-        console.log("OTP sent successfully:", info.response); // Log success
-        return res.json({ success: true, message: "OTP sent to your email" });
+      // Validate mobile number
+      if (user.mobileNumber !== mobileNumber) {
+        return res.status(401).json({ success: false, message: "Mobile number does not match" });
       }
+
+      // Generate OTP
+      const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
+
+      // Store OTP and expiry time
+      otpStore[username] = {
+        otp: otp,
+        expiresAt: moment().add(5, "minutes").toISOString()
+      };
+
+      // Send OTP to user's email
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'sribalagan.21@gmail.com',
+          pass: 'seemasri21' // Use environment variables for email credentials
+        }
+      });
+
+      const mailOptions = {
+        from: 'sribalagan.21@gmail.com',
+        to: user.email,
+        subject: 'Your OTP Code',
+        text: `Your OTP is: ${otp}`
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          return res.status(500).json({ success: false, message: "Failed to send OTP" });
+        } else {
+          return res.json({ success: true, message: "OTP sent to your email" });
+        }
+      });
     });
   } else {
-    console.log('User not found for username:', username); // Log if user not found
     return res.status(404).json({ success: false, message: "User not found" });
   }
 };
 
-// Login function (validate username, password, and OTP)
+// Login function (validate username, password, OTP)
 exports.login = (req, res) => {
   const { username, password, otp, mobileNumber } = req.body;
 
   const user = users.find(user => user.username === username);
 
   if (user) {
-    // Step 1: Check if the mobile number matches the one associated with the username
-    if (user.mobileNumber !== mobileNumber) {
-      return res.status(401).json({
-        success: false,
-        message: "Mobile number does not match with the username."
-      });
-    }
-
-    // Step 2: Compare password
+    // Validate password
     bcrypt.compare(password, user.password, (err, result) => {
-      if (err) {
-        console.error("Error comparing passwords:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+      if (err || !result) {
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
       }
 
-      if (result) {
-        // Step 3: Validate OTP
-        if (otpStore[username]) {
-          const otpData = otpStore[username];
-          if (moment().isAfter(otpData.expiresAt)) {
-            delete otpStore[username]; // Remove expired OTP
-            return res.status(400).json({ success: false, message: "Your OTP has expired. Please generate a new one." });
-          }
+      // Validate mobile number
+      if (user.mobileNumber !== mobileNumber) {
+        return res.status(401).json({ success: false, message: "Mobile number does not match" });
+      }
 
-          if (otp === otpData.otp) {
-            delete otpStore[username]; // Remove OTP after successful validation
-            return res.json({ success: true, message: "Login successful!" });
-          } else {
-            return res.status(400).json({ success: false, message: "Invalid OTP entered." });
-          }
+      // OTP validation
+      if (otpStore[username]) {
+        const otpData = otpStore[username];
+
+        // Check if OTP has expired
+        if (moment().isAfter(otpData.expiresAt)) {
+          delete otpStore[username]; // Remove expired OTP
+          return res.status(400).json({ success: false, message: "OTP expired. Please generate a new one." });
+        }
+
+        // Check if OTP matches
+        if (otp === otpData.otp) {
+          delete otpStore[username]; // Remove OTP after successful validation
+          return res.json({ success: true, message: "Login successful!" });
         } else {
-          return res.status(400).json({ success: false, message: "OTP has not been generated. Please request an OTP." });
+          return res.status(400).json({ success: false, message: "Invalid OTP" });
         }
       } else {
-        return res.status(401).json({ success: false, message: "Invalid credentials" });
+        return res.status(400).json({ success: false, message: "OTP not generated" });
       }
     });
   } else {
     return res.status(404).json({ success: false, message: "User not found" });
   }
 };
+
 
 // Register function (Only `ANDROID_ID` validation during registration)
 exports.register = (req, res) => {
