@@ -123,8 +123,6 @@ exports.login = (req, res) => {
     return res.status(404).json({ success: false, message: "User not found" });
   }
 };
-
-
 // Register function (Only `ANDROID_ID` validation during registration)
 exports.register = (req, res) => {
   const { mobileNumber, androidId } = req.body;
