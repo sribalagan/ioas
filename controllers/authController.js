@@ -18,7 +18,7 @@ const users = [
     password: bcrypt.hashSync("password2", 10),
     androidId: null,  // Store the Android ID
     installations: 1,
-    email: "sribalagan.21@gmail.com" // Email added for sending OTP
+    email: "coczeller918@gmail.com" // Email added for sending OTP
   }
 ];
 
@@ -45,8 +45,8 @@ exports.generateOtp = (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'your-email@gmail.com',
-        pass: 'your-email-password' // Ensure you use environment variables for security
+        user: 'sribalagan.21@gmail.com',
+        pass: 'seemasri21' // Ensure you use environment variables for security
       }
     });
 
