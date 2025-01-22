@@ -10,7 +10,7 @@ const users = [
     password: bcrypt.hashSync("password1", 10),
     androidId: null,  // Store the Android ID
     installations: 1,
-    email: "user1@example.com" // Email added for sending OTP
+    email: "sribalagan2003@gmail.com" // Email added for sending OTP
   },
   { 
     username: "user2", 
@@ -18,7 +18,7 @@ const users = [
     password: bcrypt.hashSync("password2", 10),
     androidId: null,  // Store the Android ID
     installations: 1,
-    email: "user2@example.com" // Email added for sending OTP
+    email: "sribalagan.21@gmail.com" // Email added for sending OTP
   }
 ];
 
