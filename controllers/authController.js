@@ -3,6 +3,7 @@ const otpGenerator = require("otp-generator"); // Install otp-generator package
 const nodemailer = require("nodemailer"); // Use Nodemailer for email sending
 const moment = require("moment"); // For handling expiry time
 
+
 const users = [
   { 
     username: "user1", 
@@ -45,13 +46,13 @@ exports.generateOtp = (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'sribalagan.21@gmail.com',
-        pass: 'seemasri21' // Ensure you use environment variables for security
+        user:"sribalagan.21@gmail.com",  // Get email from environment variables
+        pass:"seemasri21"  // Get email password from environment variables
       }
     });
 
     const mailOptions = {
-      from: 'your-email@gmail.com',
+      from: process.env.EMAIL,
       to: user.email,
       subject: 'Your OTP Code',
       text: `Your OTP is: ${otp}`
@@ -59,12 +60,15 @@ exports.generateOtp = (req, res) => {
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
+        console.error("Error sending OTP email:", error); // Log error
         return res.status(500).json({ success: false, message: "Failed to send OTP" });
       } else {
+        console.log("OTP sent successfully:", info.response); // Log success
         return res.json({ success: true, message: "OTP sent to your email" });
       }
     });
   } else {
+    console.log('User not found for username:', username); // Log if user not found
     return res.status(404).json({ success: false, message: "User not found" });
   }
 };
@@ -97,17 +101,17 @@ exports.login = (req, res) => {
           const otpData = otpStore[username];
           if (moment().isAfter(otpData.expiresAt)) {
             delete otpStore[username]; // Remove expired OTP
-            return res.status(400).json({ success: false, message: "OTP expired" });
+            return res.status(400).json({ success: false, message: "Your OTP has expired. Please generate a new one." });
           }
 
           if (otp === otpData.otp) {
             delete otpStore[username]; // Remove OTP after successful validation
             return res.json({ success: true, message: "Login successful!" });
           } else {
-            return res.status(400).json({ success: false, message: "Invalid OTP" });
+            return res.status(400).json({ success: false, message: "Invalid OTP entered." });
           }
         } else {
-          return res.status(400).json({ success: false, message: "OTP not generated" });
+          return res.status(400).json({ success: false, message: "OTP has not been generated. Please request an OTP." });
         }
       } else {
         return res.status(401).json({ success: false, message: "Invalid credentials" });
