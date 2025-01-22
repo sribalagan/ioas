@@ -56,7 +56,7 @@ exports.generateOtp = (req, res) => {
         service: 'gmail',
         auth: {
           user: 'sribalagan.21@gmail.com',
-          pass: 'seemasri21' // Use environment variables for email credentials
+          pass: 'uzjs iqmc nvjl rbqs' // Use environment variables for email credentials
         }
       });
 
