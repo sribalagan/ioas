@@ -3,8 +3,9 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const routes = require("./routes"); // Import routes
 
+
 const app = express();
-const port = process.env.PORT || 5000;  // Use dynamic port from Render
+const port = 5000;  // Use dynamic port from Render
 
 // Middleware
 app.use(cors()); // Enable CORS
